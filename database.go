@@ -2,6 +2,8 @@ package sensemicroservice
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -57,6 +59,18 @@ func (d *Database) readAll(b string) []byte {
 	json, err := json.Marshal(l)
 	checkErr(err)
 	return json
+}
+
+func (d *Database) backup(w http.ResponseWriter) error {
+	err := d.DB.View(
+		func(tx *bolt.Tx) error {
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.Header().Set("Content-Disposition", `attachment; filename="my.db"`)
+			w.Header().Set("Content-Length", strconv.Itoa(int(tx.Size())))
+			_, err := tx.WriteTo(w)
+			return err
+		})
+	return err
 }
 
 func newDB() *Database {

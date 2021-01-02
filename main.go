@@ -2,48 +2,69 @@ package sensemicroservice
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 
-	"github.com/buaazp/fasthttprouter"
+	"github.com/gorilla/mux"
 	jtltojson "github.com/nicholasvuono/jtl-to-json"
-	"github.com/valyala/fasthttp"
 )
 
-func getProtocolLevelResultsList(ctx *fasthttp.RequestCtx) {
+func getProtocolLevelResultsList(w http.ResponseWriter, r *http.Request) {
 	data := db.readAll("plu")
-	ctx.Write(data)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write(data)
+	checkErr(err)
 }
 
-func getBrowserLevelResultsList(ctx *fasthttp.RequestCtx) {
+func getBrowserLevelResultsList(w http.ResponseWriter, r *http.Request) {
 	data := db.readAll("blu")
-	ctx.Write(data)
-}
-
-func addProtocolLevelResult(ctx *fasthttp.RequestCtx) {
-	var r *jtltojson.Result
-	b := ctx.PostBody()
-	err := json.Unmarshal(b, r)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write(data)
 	checkErr(err)
-	db.write("plu", r)
 }
 
-func addBrowserLevelResult(ctx *fasthttp.RequestCtx) {
-	var r *jtltojson.Result
-	b := ctx.PostBody()
-	err := json.Unmarshal(b, r)
+func addProtocolLevelResult(w http.ResponseWriter, r *http.Request) {
+	var res *jtltojson.Result
+	b, err := r.GetBody()
 	checkErr(err)
-	db.write("blu", r)
+	err = json.NewDecoder(b).Decode(res)
+	checkErr(err)
+	db.write("plu", res)
+	w.WriteHeader(http.StatusOK)
+	_, err = fmt.Fprintf(w, "Result was added to the database successfully!")
+	checkErr(err)
 }
 
-func routes() *fasthttprouter.Router {
-	r := fasthttprouter.New()
-	r.GET("/results/plu/list", getProtocolLevelResultsList)
-	r.GET("/results/blu/list", getBrowserLevelResultsList)
-	r.POST("/results/plu/add", addProtocolLevelResult)
-	r.POST("/results/blu/add", addBrowserLevelResult)
+func addBrowserLevelResult(w http.ResponseWriter, r *http.Request) {
+	var res *jtltojson.Result
+	b, err := r.GetBody()
+	checkErr(err)
+	err = json.NewDecoder(b).Decode(res)
+	checkErr(err)
+	db.write("blu", res)
+	w.WriteHeader(http.StatusOK)
+	_, err = fmt.Fprintf(w, "Result was added to the database successfully!")
+	checkErr(err)
+}
+
+func downloadDatabaseBackup(w http.ResponseWriter, r *http.Request) {
+	err := db.backup(w)
+	checkErr(err)
+}
+
+func routes() *mux.Router {
+	r := mux.NewRouter()
+	r.HandleFunc("/results/plu/list", getProtocolLevelResultsList).Methods("GET")
+	r.HandleFunc("/results/blu/list", getBrowserLevelResultsList).Methods("GET")
+	r.HandleFunc("/results/plu/add", addProtocolLevelResult).Methods("POST")
+	r.HandleFunc("/results/blu/add", addBrowserLevelResult).Methods("POST")
+	r.HandleFunc("/backup", downloadDatabaseBackup).Methods("GET")
 	return r
 }
 
 func main() {
-	log.Fatal(fasthttp.ListenAndServe(":10000", routes().Handler))
+	log.Fatal(http.ListenAndServe(":10000", routes()))
 }
