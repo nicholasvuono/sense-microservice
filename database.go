@@ -1,4 +1,4 @@
-package sensemicroservice
+package main
 
 import (
 	"encoding/json"
