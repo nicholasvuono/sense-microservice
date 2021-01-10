@@ -43,13 +43,13 @@ func (d *Database) write(b string, r *jtltojson.Result) {
 }
 
 func (d *Database) readAll(b string) []byte {
-	var l []*jtltojson.Result
+	l := make([]jtltojson.Result, 0)
 	err := d.DB.View(
 		func(tx *bolt.Tx) error {
 			c := tx.Bucket([]byte(b)).Cursor()
 			for k, v := c.First(); k != nil; k, v = c.Next() {
-				var r *jtltojson.Result
-				err := json.Unmarshal(v, r)
+				r := jtltojson.Result{}
+				err := json.Unmarshal(v, &r)
 				checkErr(err)
 				l = append(l, r)
 			}
