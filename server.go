@@ -20,6 +20,7 @@ func getProtocolLevelResultsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBrowserLevelResultsList(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	data := db.readAll("blu")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -28,24 +29,22 @@ func getBrowserLevelResultsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func addProtocolLevelResult(w http.ResponseWriter, r *http.Request) {
-	var res *jtltojson.Result
-	b, err := r.GetBody()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	res := jtltojson.Result{}
+	err := json.NewDecoder(r.Body).Decode(&res)
 	checkErr(err)
-	err = json.NewDecoder(b).Decode(res)
-	checkErr(err)
-	db.write("plu", res)
+	db.write("plu", &res)
 	w.WriteHeader(http.StatusOK)
 	_, err = fmt.Fprintf(w, "Result was added to the database successfully!")
 	checkErr(err)
 }
 
 func addBrowserLevelResult(w http.ResponseWriter, r *http.Request) {
-	var res *jtltojson.Result
-	b, err := r.GetBody()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	res := jtltojson.Result{}
+	err := json.NewDecoder(r.Body).Decode(&res)
 	checkErr(err)
-	err = json.NewDecoder(b).Decode(res)
-	checkErr(err)
-	db.write("blu", res)
+	db.write("blu", &res)
 	w.WriteHeader(http.StatusOK)
 	_, err = fmt.Fprintf(w, "Result was added to the database successfully!")
 	checkErr(err)
